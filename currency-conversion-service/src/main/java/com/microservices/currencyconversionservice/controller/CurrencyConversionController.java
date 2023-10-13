@@ -1,7 +1,7 @@
 package com.microservices.currencyconversionservice.controller;
 
 import com.microservices.currencyconversionservice.entity.CurrencyConversion;
-import org.apache.coyote.Response;
+import com.microservices.currencyconversionservice.proxy.CurrencyExchangeProxy;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -13,6 +13,13 @@ import java.util.HashMap;
 
 @RestController
 public class CurrencyConversionController {
+
+    private final CurrencyExchangeProxy currencyExchangeProxy;
+
+    public CurrencyConversionController(CurrencyExchangeProxy currencyExchangeProxy) {
+        this.currencyExchangeProxy = currencyExchangeProxy;
+    }
+
 
     @GetMapping("http://localhost:8100/currency-conversion/from/{from}/to/{to}/quantity/{quantity}")
     public CurrencyConversion calculateCurrencyConversion(
@@ -37,5 +44,23 @@ public class CurrencyConversionController {
                 currencyConversion.getConversionMultiple(),
                 quantity.multiply(currencyConversion.getConversionMultiple()),
                 currencyConversion.getEnvironment());
+    }
+
+    @GetMapping("http://localhost:8100/currency-conversion-feign/from/{from}/to/{to}/quantity/{quantity}")
+    public CurrencyConversion calculateCurrencyConversionFeign(
+            @PathVariable String from,
+            @PathVariable String to,
+            @PathVariable BigDecimal quantity) {
+
+
+        CurrencyConversion currencyConversion = currencyExchangeProxy.retrieveExchangeValue(from, to);
+
+        return new CurrencyConversion(currencyConversion.getId(),
+                from,
+                to,
+                quantity,
+                currencyConversion.getConversionMultiple(),
+                quantity.multiply(currencyConversion.getConversionMultiple()),
+                currencyConversion.getEnvironment() + " " + "feign");
     }
 }
